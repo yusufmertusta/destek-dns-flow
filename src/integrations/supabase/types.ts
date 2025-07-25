@@ -14,16 +14,136 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      dns_records: {
+        Row: {
+          created_at: string
+          domain_id: string
+          id: string
+          name: string
+          site: string | null
+          status: Database["public"]["Enums"]["dns_record_status"]
+          ttl: number
+          type: Database["public"]["Enums"]["dns_record_type"]
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          domain_id: string
+          id?: string
+          name: string
+          site?: string | null
+          status?: Database["public"]["Enums"]["dns_record_status"]
+          ttl?: number
+          type: Database["public"]["Enums"]["dns_record_type"]
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          domain_id?: string
+          id?: string
+          name?: string
+          site?: string | null
+          status?: Database["public"]["Enums"]["dns_record_status"]
+          ttl?: number
+          type?: Database["public"]["Enums"]["dns_record_type"]
+          updated_at?: string
+          value?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dns_records_domain_id_fkey"
+            columns: ["domain_id"]
+            isOneToOne: false
+            referencedRelation: "domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      domains: {
+        Row: {
+          created_at: string
+          domain_name: string
+          id: string
+          status: Database["public"]["Enums"]["domain_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          domain_name: string
+          id?: string
+          status?: Database["public"]["Enums"]["domain_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          domain_name?: string
+          id?: string
+          status?: Database["public"]["Enums"]["domain_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          role: Database["public"]["Enums"]["user_role"]
+          subscription_level: Database["public"]["Enums"]["subscription_level"]
+          two_factor_enabled: boolean
+          two_factor_secret: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          role?: Database["public"]["Enums"]["user_role"]
+          subscription_level?: Database["public"]["Enums"]["subscription_level"]
+          two_factor_enabled?: boolean
+          two_factor_secret?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          subscription_level?: Database["public"]["Enums"]["subscription_level"]
+          two_factor_enabled?: boolean
+          two_factor_secret?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["user_role"]
+      }
+      is_admin: {
+        Args: Record<PropertyKey, never>
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      dns_record_status: "active" | "inactive"
+      dns_record_type: "A" | "AAAA" | "CNAME" | "MX" | "TXT" | "NS" | "SRV"
+      domain_status: "active" | "inactive" | "pending"
+      subscription_level: "basic" | "pro" | "enterprise"
+      user_role: "admin" | "user"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +270,12 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      dns_record_status: ["active", "inactive"],
+      dns_record_type: ["A", "AAAA", "CNAME", "MX", "TXT", "NS", "SRV"],
+      domain_status: ["active", "inactive", "pending"],
+      subscription_level: ["basic", "pro", "enterprise"],
+      user_role: ["admin", "user"],
+    },
   },
 } as const
