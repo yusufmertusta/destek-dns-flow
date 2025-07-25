@@ -1,50 +1,33 @@
-// Mock authentication system
-export interface User {
+import { supabase } from '@/integrations/supabase/client';
+import { User as SupabaseUser, Session } from '@supabase/supabase-js';
+
+// User profile interface matching our database schema
+export interface UserProfile {
   id: string;
+  user_id: string;
   name: string;
-  email: string;
   role: 'admin' | 'user';
-  subscriptionLevel: 'basic' | 'pro' | 'enterprise';
-  twoFactorEnabled: boolean;
+  subscription_level: 'basic' | 'pro' | 'enterprise';
+  two_factor_enabled: boolean;
+  two_factor_secret?: string;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface AuthState {
-  user: User | null;
+  user: SupabaseUser | null;
+  profile: UserProfile | null;
+  session: Session | null;
   isAuthenticated: boolean;
   isLoading: boolean;
 }
 
-// Mock users for demo (defined here to avoid circular import)
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Admin User',
-    email: 'admin@destek.dev',
-    role: 'admin',
-    subscriptionLevel: 'enterprise',
-    twoFactorEnabled: true
-  },
-  {
-    id: '2',
-    name: 'John Doe',
-    email: 'john@example.com',
-    role: 'user',
-    subscriptionLevel: 'pro',
-    twoFactorEnabled: true
-  },
-  {
-    id: '3',
-    name: 'Jane Smith',
-    email: 'jane@company.com',
-    role: 'user',
-    subscriptionLevel: 'basic',
-    twoFactorEnabled: false
-  }
-];
-
 class AuthService {
   private static instance: AuthService;
-  private user: User | null = null;
+  private user: SupabaseUser | null = null;
+  private profile: UserProfile | null = null;
+  private session: Session | null = null;
+  private listeners: ((authState: AuthState) => void)[] = [];
 
   static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -53,64 +36,203 @@ class AuthService {
     return AuthService.instance;
   }
 
-  async login(email: string, password: string): Promise<{ success: boolean; requiresTwoFactor?: boolean; user?: User }> {
-    // Mock login logic
-    const user = mockUsers.find(u => u.email === email);
-    
-    if (!user || password !== 'password123') {
-      return { success: false };
-    }
-
-    if (user.twoFactorEnabled) {
-      // Store pending user for 2FA verification
-      sessionStorage.setItem('pendingUser', JSON.stringify(user));
-      return { success: true, requiresTwoFactor: true };
-    }
-
-    this.user = user;
-    localStorage.setItem('user', JSON.stringify(user));
-    return { success: true, user };
+  constructor() {
+    this.initializeAuth();
   }
 
-  async verifyTwoFactor(code: string): Promise<{ success: boolean; user?: User }> {
-    const pendingUserStr = sessionStorage.getItem('pendingUser');
-    if (!pendingUserStr) {
-      return { success: false };
-    }
+  private async initializeAuth() {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        this.session = session;
+        this.user = session?.user ?? null;
+        
+        if (session?.user) {
+          await this.loadUserProfile(session.user.id);
+        } else {
+          this.profile = null;
+        }
+        
+        this.notifyListeners();
+      }
+    );
 
-    // Mock 2FA verification (accept any 6-digit code)
+    // Get initial session
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      this.session = session;
+      this.user = session.user;
+      await this.loadUserProfile(session.user.id);
+    }
+    
+    this.notifyListeners();
+  }
+
+  private async loadUserProfile(userId: string): Promise<void> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error loading user profile:', error);
+        return;
+      }
+
+      this.profile = data;
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+    }
+  }
+
+  private notifyListeners() {
+    const authState: AuthState = {
+      user: this.user,
+      profile: this.profile,
+      session: this.session,
+      isAuthenticated: !!this.user,
+      isLoading: false
+    };
+    
+    this.listeners.forEach(listener => listener(authState));
+  }
+
+  onAuthStateChange(callback: (authState: AuthState) => void) {
+    this.listeners.push(callback);
+    
+    // Call immediately with current state
+    const authState: AuthState = {
+      user: this.user,
+      profile: this.profile,
+      session: this.session,
+      isAuthenticated: !!this.user,
+      isLoading: false
+    };
+    callback(authState);
+
+    // Return unsubscribe function
+    return () => {
+      this.listeners = this.listeners.filter(l => l !== callback);
+    };
+  }
+
+  async signIn(email: string, password: string): Promise<{ 
+    success: boolean; 
+    requiresTwoFactor?: boolean; 
+    error?: string;
+  }> {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // Check if user has 2FA enabled
+      if (data.user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('two_factor_enabled')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
+        if (profile?.two_factor_enabled) {
+          // For now, we'll simulate 2FA requirement
+          // In a real implementation, you'd check the 2FA status properly
+          return { success: true, requiresTwoFactor: true };
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  async signUp(email: string, password: string, metadata?: { name?: string; role?: string }): Promise<{
+    success: boolean;
+    error?: string;
+  }> {
+    try {
+      const redirectUrl = `${window.location.origin}/`;
+      
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: metadata
+        }
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'An unexpected error occurred' };
+    }
+  }
+
+  async verifyTwoFactor(code: string): Promise<{ success: boolean; error?: string }> {
+    // Mock 2FA verification for now
+    // In a real implementation, you'd verify the TOTP code against the user's secret
     if (code.length === 6 && /^\d+$/.test(code)) {
-      const user = JSON.parse(pendingUserStr);
-      this.user = user;
-      localStorage.setItem('user', JSON.stringify(user));
-      sessionStorage.removeItem('pendingUser');
-      return { success: true, user };
+      return { success: true };
     }
-
-    return { success: false };
+    return { success: false, error: 'Invalid verification code' };
   }
 
-  logout(): void {
-    this.user = null;
-    localStorage.removeItem('user');
-    sessionStorage.removeItem('pendingUser');
+  async signOut(): Promise<void> {
+    await supabase.auth.signOut();
   }
 
-  getCurrentUser(): User | null {
-    if (this.user) return this.user;
-    
-    const userStr = localStorage.getItem('user');
-    if (userStr) {
-      this.user = JSON.parse(userStr);
-      return this.user;
-    }
-    
-    return null;
+  getCurrentUser(): SupabaseUser | null {
+    return this.user;
+  }
+
+  getCurrentProfile(): UserProfile | null {
+    return this.profile;
+  }
+
+  getSession(): Session | null {
+    return this.session;
   }
 
   isAuthenticated(): boolean {
-    return this.getCurrentUser() !== null;
+    return !!this.user;
+  }
+
+  isAdmin(): boolean {
+    return this.profile?.role === 'admin';
+  }
+
+  // Backwards compatibility methods
+  async login(email: string, password: string): Promise<{ 
+    success: boolean; 
+    requiresTwoFactor?: boolean; 
+    user?: UserProfile;
+  }> {
+    const result = await this.signIn(email, password);
+    return {
+      success: result.success,
+      requiresTwoFactor: result.requiresTwoFactor,
+      user: this.profile || undefined
+    };
+  }
+
+  async logout(): Promise<void> {
+    await this.signOut();
   }
 }
+
+// Backwards compatibility exports
+export type User = UserProfile;
 
 export const authService = AuthService.getInstance();

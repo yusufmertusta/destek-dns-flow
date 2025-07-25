@@ -24,7 +24,7 @@ import {
   BarChart3,
   Users
 } from "lucide-react";
-import { authService, User as UserType } from "@/lib/auth";
+import { UserProfile, authService, AuthState } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
@@ -34,29 +34,38 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ isAdmin = false }: DashboardLayoutProps) {
-  const [user, setUser] = useState<UserType | null>(null);
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    session: null,
+    isAuthenticated: false,
+    isLoading: true
+  });
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
 
   useEffect(() => {
-    const currentUser = authService.getCurrentUser();
-    if (!currentUser) {
-      navigate('/login');
-      return;
-    }
-    
-    if (isAdmin && currentUser.role !== 'admin') {
-      navigate('/dashboard');
-      return;
-    }
-    
-    setUser(currentUser);
+    const unsubscribe = authService.onAuthStateChange((state) => {
+      setAuthState(state);
+      
+      if (!state.isAuthenticated && !state.isLoading) {
+        navigate('/login');
+        return;
+      }
+      
+      if (isAdmin && state.profile?.role !== 'admin') {
+        navigate('/dashboard');
+        return;
+      }
+    });
+
+    return unsubscribe;
   }, [navigate, isAdmin]);
 
-  const handleLogout = () => {
-    authService.logout();
+  const handleLogout = async () => {
+    await authService.signOut();
     toast({
       title: "Logged out",
       description: "You have been successfully logged out.",
@@ -159,9 +168,11 @@ export function DashboardLayout({ isAdmin = false }: DashboardLayoutProps) {
     </div>
   );
 
-  if (!user) {
+  if (!authState.isAuthenticated || !authState.profile) {
     return null; // Loading state or redirect handled in useEffect
   }
+
+  const user = authState.profile;
 
   return (
     <div className="min-h-screen bg-background">
@@ -210,9 +221,9 @@ export function DashboardLayout({ isAdmin = false }: DashboardLayoutProps) {
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none">{user.name}</p>
-                      <p className="text-xs leading-none text-muted-foreground">
-                        {user.email}
-                      </p>
+                       <p className="text-xs leading-none text-muted-foreground">
+                         {authState.user?.email}
+                       </p>
                       <div className="flex items-center space-x-2 mt-1">
                         <span className={cn(
                           "inline-flex items-center rounded-full px-2 py-1 text-xs font-medium",
@@ -222,9 +233,9 @@ export function DashboardLayout({ isAdmin = false }: DashboardLayoutProps) {
                         )}>
                           {user.role === 'admin' ? 'Administrator' : 'User'}
                         </span>
-                        <span className="inline-flex items-center rounded-full bg-accent px-2 py-1 text-xs font-medium text-accent-foreground">
-                          {user.subscriptionLevel}
-                        </span>
+                         <span className="inline-flex items-center rounded-full bg-accent px-2 py-1 text-xs font-medium text-accent-foreground">
+                           {user.subscription_level}
+                         </span>
                       </div>
                     </div>
                   </DropdownMenuLabel>

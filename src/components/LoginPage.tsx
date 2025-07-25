@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { InputOTP, InputOTPGroup, InputOTPSeparator, InputOTPSlot } from "@/components/ui/input-otp";
 import { Server, Shield, ArrowLeft, Loader2 } from "lucide-react";
-import { authService } from "@/lib/auth";
+import { authService, AuthState } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
 
 export function LoginPage() {
@@ -17,9 +17,29 @@ export function LoginPage() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [authState, setAuthState] = useState<AuthState>({
+    user: null,
+    profile: null,
+    session: null,
+    isAuthenticated: false,
+    isLoading: false
+  });
   
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Set up auth state listener
+  useEffect(() => {
+    const unsubscribe = authService.onAuthStateChange((state) => {
+      setAuthState(state);
+      
+      if (state.isAuthenticated && state.profile) {
+        navigate(state.profile.role === 'admin' ? '/admin' : '/dashboard');
+      }
+    });
+
+    return unsubscribe;
+  }, [navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +47,7 @@ export function LoginPage() {
     setError('');
 
     try {
-      const result = await authService.login(email, password);
+      const result = await authService.signIn(email, password);
       
       if (result.success) {
         if (result.requiresTwoFactor) {
@@ -36,15 +56,15 @@ export function LoginPage() {
             title: "2FA Required",
             description: "Please enter your two-factor authentication code.",
           });
-        } else if (result.user) {
+        } else {
           toast({
             title: "Login Successful",
-            description: `Welcome back, ${result.user.name}!`,
+            description: "Welcome back!",
           });
-          navigate(result.user.role === 'admin' ? '/admin' : '/dashboard');
+          // Navigation will be handled by auth state change listener
         }
       } else {
-        setError('Invalid email or password');
+        setError(result.error || 'Invalid email or password');
       }
     } catch (error) {
       setError('An error occurred during login');
@@ -61,14 +81,14 @@ export function LoginPage() {
     try {
       const result = await authService.verifyTwoFactor(twoFactorCode);
       
-      if (result.success && result.user) {
+      if (result.success) {
         toast({
           title: "Login Successful",
-          description: `Welcome back, ${result.user.name}!`,
+          description: "Welcome back!",
         });
-        navigate(result.user.role === 'admin' ? '/admin' : '/dashboard');
+        // Navigation will be handled by auth state change listener
       } else {
-        setError('Invalid authentication code');
+        setError(result.error || 'Invalid authentication code');
       }
     } catch (error) {
       setError('An error occurred during verification');
@@ -234,14 +254,13 @@ export function LoginPage() {
                   </Button>
                 </div>
 
-                <div className="border-t pt-4">
-                  <div className="text-sm text-muted-foreground text-center">
-                    <p className="mb-2">Demo Credentials:</p>
-                    <p className="font-mono text-xs">Admin: admin@destek.dev / password123</p>
-                    <p className="font-mono text-xs">User: john@example.com / password123</p>
-                    <p className="text-xs mt-2">2FA Code: Any 6 digits (e.g., 123456)</p>
+                  <div className="border-t pt-4">
+                    <div className="text-sm text-muted-foreground text-center">
+                      <p className="mb-2">Test the app with Supabase authentication:</p>
+                      <p className="text-xs">Create an account or sign in with your credentials</p>
+                      <p className="text-xs mt-2">2FA Code: Any 6 digits (e.g., 123456)</p>
+                    </div>
                   </div>
-                </div>
               </div>
             )}
           </CardContent>
