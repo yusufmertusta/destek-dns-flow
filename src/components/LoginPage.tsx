@@ -34,21 +34,22 @@ export function LoginPage() {
       console.log('LoginPage - Auth state changed:', state);
       setAuthState(state);
       
-      // Navigate when authenticated and profile is loaded, or after a brief delay
+      // Navigate when authenticated - try immediately, or with delay if profile not ready
       if (state.isAuthenticated && state.user) {
         if (state.profile) {
           // Profile loaded, navigate immediately
           const redirectPath = state.profile.role === 'admin' ? '/admin' : '/dashboard';
           console.log('Navigating to:', redirectPath);
-          navigate(redirectPath);
+          setTimeout(() => navigate(redirectPath), 100); // Small delay to ensure smooth navigation
         } else {
-          // Profile not loaded yet, wait a bit and then navigate with default
+          // Profile not loaded yet, wait and then navigate with default
+          console.log('Profile not loaded, waiting...');
           setTimeout(() => {
-            const currentState = authService.getCurrentProfile();
-            const redirectPath = currentState?.role === 'admin' ? '/admin' : '/dashboard';
-            console.log('Delayed navigation to:', redirectPath);
+            const currentProfile = authService.getCurrentProfile();
+            const redirectPath = currentProfile?.role === 'admin' ? '/admin' : '/dashboard';
+            console.log('Delayed navigation to:', redirectPath, 'Profile:', currentProfile);
             navigate(redirectPath);
-          }, 1000);
+          }, 1500);
         }
       }
     });
@@ -79,8 +80,8 @@ export function LoginPage() {
             title: "Login Successful",
             description: "Welcome back!",
           });
-          // Keep loading state until navigation happens
-          // setIsLoading will be handled by navigation or timeout
+          // Reset loading state and let auth state listener handle navigation
+          setIsLoading(false);
         }
       } else {
         setError(result.error || 'Invalid email or password');
