@@ -44,6 +44,7 @@ class AuthService {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.id);
         this.session = session;
         this.user = session?.user ?? null;
         
@@ -51,9 +52,8 @@ class AuthService {
           await this.loadUserProfile(session.user.id);
         } else {
           this.profile = null;
+          this.notifyListeners();
         }
-        
-        this.notifyListeners();
       }
     );
 
@@ -70,6 +70,7 @@ class AuthService {
 
   private async loadUserProfile(userId: string): Promise<void> {
     try {
+      console.log('Loading profile for user:', userId);
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -78,12 +79,18 @@ class AuthService {
 
       if (error) {
         console.error('Error loading user profile:', error);
+        this.profile = null;
+        this.notifyListeners();
         return;
       }
 
+      console.log('Profile loaded:', data);
       this.profile = data;
+      this.notifyListeners();
     } catch (error) {
       console.error('Error loading user profile:', error);
+      this.profile = null;
+      this.notifyListeners();
     }
   }
 

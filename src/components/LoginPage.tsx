@@ -31,13 +31,25 @@ export function LoginPage() {
   // Set up auth state listener
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChange((state) => {
+      console.log('LoginPage - Auth state changed:', state);
       setAuthState(state);
       
-      // Navigate immediately when authenticated, even without profile
+      // Navigate when authenticated and profile is loaded, or after a brief delay
       if (state.isAuthenticated && state.user) {
-        // Default to user dashboard, will redirect to admin if needed
-        const redirectPath = state.profile?.role === 'admin' ? '/admin' : '/dashboard';
-        navigate(redirectPath);
+        if (state.profile) {
+          // Profile loaded, navigate immediately
+          const redirectPath = state.profile.role === 'admin' ? '/admin' : '/dashboard';
+          console.log('Navigating to:', redirectPath);
+          navigate(redirectPath);
+        } else {
+          // Profile not loaded yet, wait a bit and then navigate with default
+          setTimeout(() => {
+            const currentState = authService.getCurrentProfile();
+            const redirectPath = currentState?.role === 'admin' ? '/admin' : '/dashboard';
+            console.log('Delayed navigation to:', redirectPath);
+            navigate(redirectPath);
+          }, 1000);
+        }
       }
     });
 
@@ -50,7 +62,9 @@ export function LoginPage() {
     setError('');
 
     try {
+      console.log('Attempting login...');
       const result = await authService.signIn(email, password);
+      console.log('Login result:', result);
       
       if (result.success) {
         if (result.requiresTwoFactor) {
@@ -59,19 +73,22 @@ export function LoginPage() {
             title: "2FA Required",
             description: "Please enter your two-factor authentication code.",
           });
+          setIsLoading(false);
         } else {
           toast({
             title: "Login Successful",
             description: "Welcome back!",
           });
-          // Navigation will be handled by auth state change listener
+          // Keep loading state until navigation happens
+          // setIsLoading will be handled by navigation or timeout
         }
       } else {
         setError(result.error || 'Invalid email or password');
+        setIsLoading(false);
       }
     } catch (error) {
+      console.error('Login error:', error);
       setError('An error occurred during login');
-    } finally {
       setIsLoading(false);
     }
   };
