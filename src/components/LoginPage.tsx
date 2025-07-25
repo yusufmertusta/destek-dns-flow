@@ -34,22 +34,31 @@ export function LoginPage() {
       console.log('LoginPage - Auth state changed:', state);
       setAuthState(state);
       
-      // Navigate when authenticated - try immediately, or with delay if profile not ready
-      if (state.isAuthenticated && state.user) {
+      // Navigate when authenticated successfully
+      if (state.isAuthenticated && state.user && !state.isLoading) {
+        setIsLoading(false); // Clear loading state
+        
+        // Wait for profile to load, then navigate
         if (state.profile) {
-          // Profile loaded, navigate immediately
           const redirectPath = state.profile.role === 'admin' ? '/admin' : '/dashboard';
           console.log('Navigating to:', redirectPath);
-          setTimeout(() => navigate(redirectPath), 100); // Small delay to ensure smooth navigation
+          setTimeout(() => {
+            navigate(redirectPath, { replace: true });
+          }, 100);
         } else {
-          // Profile not loaded yet, wait and then navigate with default
-          console.log('Profile not loaded, waiting...');
+          // Profile loading might take a moment, wait a bit
           setTimeout(() => {
             const currentProfile = authService.getCurrentProfile();
-            const redirectPath = currentProfile?.role === 'admin' ? '/admin' : '/dashboard';
-            console.log('Delayed navigation to:', redirectPath, 'Profile:', currentProfile);
-            navigate(redirectPath);
-          }, 1500);
+            if (currentProfile) {
+              const redirectPath = currentProfile.role === 'admin' ? '/admin' : '/dashboard';
+              console.log('Delayed navigation to:', redirectPath);
+              navigate(redirectPath, { replace: true });
+            } else {
+              // Fallback to user dashboard if no profile found
+              console.log('No profile found, navigating to user dashboard');
+              navigate('/dashboard', { replace: true });
+            }
+          }, 2000);
         }
       }
     });
@@ -161,7 +170,7 @@ export function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@destek.dev"
+                    placeholder="admin@admin.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
@@ -275,13 +284,15 @@ export function LoginPage() {
                   </Button>
                 </div>
 
-                  <div className="border-t pt-4">
-                    <div className="text-sm text-muted-foreground text-center">
-                      <p className="mb-2">Test the app with Supabase authentication:</p>
-                      <p className="text-xs">Create an account or sign in with your credentials</p>
-                      <p className="text-xs mt-2">2FA Code: Any 6 digits (e.g., 123456)</p>
-                    </div>
+                <div className="border-t pt-4">
+                  <div className="text-sm text-muted-foreground text-center">
+                    <p className="mb-2">Test login credentials:</p>
+                    <p className="text-xs font-mono bg-muted p-2 rounded">
+                      admin@admin.com / admin123
+                    </p>
+                    <p className="text-xs mt-2">2FA Code: Any 6 digits (e.g., 123456)</p>
                   </div>
+                </div>
               </div>
             )}
           </CardContent>

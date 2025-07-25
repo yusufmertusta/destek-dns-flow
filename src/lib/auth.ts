@@ -84,8 +84,14 @@ class AuthService {
         return;
       }
 
-      console.log('Profile loaded:', data);
-      this.profile = data;
+      if (data) {
+        console.log('Profile loaded:', data);
+        this.profile = data;
+      } else {
+        console.log('No profile found for user:', userId);
+        this.profile = null;
+      }
+      
       this.notifyListeners();
     } catch (error) {
       console.error('Error loading user profile:', error);
