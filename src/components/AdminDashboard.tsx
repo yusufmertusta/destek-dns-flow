@@ -37,9 +37,9 @@ export function AdminDashboard() {
     loadRecentActivity();
   }, []);
 
-  const loadStats = () => {
-    const allDomains = dataService.getAllDomains();
-    const allRecords = dataService.getAllDNSRecords();
+  const loadStats = async () => {
+    const allDomains = await dataService.getAllDomains();
+    const allRecords = await dataService.getAllDNSRecords();
     
     // Mock user statistics
     setStats({

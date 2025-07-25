@@ -37,10 +37,10 @@ export function UserDashboard() {
     loadDomains();
   }, []);
 
-  const loadDomains = () => {
+  const loadDomains = async () => {
     const user = authService.getCurrentUser();
     if (user) {
-      const userDomains = dataService.getDomainsByUserId(user.id);
+      const userDomains = await dataService.getDomainsByUserId(user.id);
       setDomains(userDomains);
     }
   };
@@ -57,20 +57,22 @@ export function UserDashboard() {
       const user = authService.getCurrentUser();
       if (!user) return;
 
-      const newDomain = dataService.createDomain({
+      const newDomain = await dataService.createDomain({
         userId: user.id,
         domainName: newDomainName.trim(),
         status: 'active'
       });
 
-      setDomains(prev => [...prev, newDomain]);
-      setNewDomainName('');
-      setIsAddDialogOpen(false);
-      
-      toast({
-        title: "Domain Added",
-        description: `${newDomain.domainName} has been added successfully.`,
-      });
+      if (newDomain) {
+        setDomains(prev => [...prev, newDomain]);
+        setNewDomainName('');
+        setIsAddDialogOpen(false);
+        
+        toast({
+          title: "Domain Added",
+          description: `${newDomain.domainName} has been added successfully.`,
+        });
+      }
     } catch (error) {
       toast({
         title: "Error",
@@ -82,9 +84,9 @@ export function UserDashboard() {
     }
   };
 
-  const handleDeleteDomain = (domain: Domain) => {
+  const handleDeleteDomain = async (domain: Domain) => {
     if (confirm(`Are you sure you want to delete ${domain.domainName}? This action cannot be undone.`)) {
-      const success = dataService.deleteDomain(domain.id);
+      const success = await dataService.deleteDomain(domain.id);
       if (success) {
         setDomains(prev => prev.filter(d => d.id !== domain.id));
         toast({

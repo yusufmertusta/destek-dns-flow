@@ -52,30 +52,34 @@ export function DNSRecordsPage() {
   });
 
   useEffect(() => {
-    if (!domainId) {
-      navigate('/dashboard');
-      return;
-    }
+    const loadDomainAndRecords = async () => {
+      if (!domainId) {
+        navigate('/dashboard');
+        return;
+      }
 
-    const user = authService.getCurrentUser();
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+      const user = authService.getCurrentUser();
+      if (!user) {
+        navigate('/login');
+        return;
+      }
 
-    const domainData = dataService.getDomainById(domainId);
-    if (!domainData || (user.role !== 'admin' && domainData.userId !== user.id)) {
-      navigate('/dashboard');
-      return;
-    }
+      const domainData = await dataService.getDomainById(domainId);
+      if (!domainData || (user.role !== 'admin' && domainData.userId !== user.id)) {
+        navigate('/dashboard');
+        return;
+      }
 
-    setDomain(domainData);
-    loadRecords();
+      setDomain(domainData);
+      loadRecords();
+    };
+
+    loadDomainAndRecords();
   }, [domainId, navigate]);
 
-  const loadRecords = () => {
+  const loadRecords = async () => {
     if (domainId) {
-      const domainRecords = dataService.getDNSRecordsByDomainId(domainId);
+      const domainRecords = await dataService.getDNSRecordsByDomainId(domainId);
       setRecords(domainRecords);
     }
   };
@@ -102,12 +106,14 @@ export function DNSRecordsPage() {
 
     setIsLoading(true);
     try {
-      const newRecord = dataService.createDNSRecord({
+      const newRecord = await dataService.createDNSRecord({
         domainId,
         ...formData
       });
 
-      setRecords(prev => [...prev, newRecord]);
+      if (newRecord) {
+        setRecords(prev => [...prev, newRecord]);
+      }
       setIsAddDialogOpen(false);
       resetForm();
       
@@ -141,7 +147,7 @@ export function DNSRecordsPage() {
   const handleUpdateRecord = async (recordId: string) => {
     setIsLoading(true);
     try {
-      const updatedRecord = dataService.updateDNSRecord(recordId, formData);
+      const updatedRecord = await dataService.updateDNSRecord(recordId, formData);
       if (updatedRecord) {
         setRecords(prev => prev.map(r => r.id === recordId ? updatedRecord : r));
         setEditingRecord(null);
@@ -163,9 +169,9 @@ export function DNSRecordsPage() {
     }
   };
 
-  const handleDeleteRecord = (record: DNSRecord) => {
+  const handleDeleteRecord = async (record: DNSRecord) => {
     if (confirm(`Are you sure you want to delete the ${record.type} record for ${record.name}?`)) {
-      const success = dataService.deleteDNSRecord(record.id);
+      const success = await dataService.deleteDNSRecord(record.id);
       if (success) {
         setRecords(prev => prev.filter(r => r.id !== record.id));
         toast({
