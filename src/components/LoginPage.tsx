@@ -33,8 +33,11 @@ export function LoginPage() {
     const unsubscribe = authService.onAuthStateChange((state) => {
       setAuthState(state);
       
-      if (state.isAuthenticated && state.profile) {
-        navigate(state.profile.role === 'admin' ? '/admin' : '/dashboard');
+      // Navigate immediately when authenticated, even without profile
+      if (state.isAuthenticated && state.user) {
+        // Default to user dashboard, will redirect to admin if needed
+        const redirectPath = state.profile?.role === 'admin' ? '/admin' : '/dashboard';
+        navigate(redirectPath);
       }
     });
 
