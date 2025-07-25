@@ -17,49 +17,16 @@ export function LoginPage() {
   const [twoFactorCode, setTwoFactorCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const [authState, setAuthState] = useState<AuthState>({
-    user: null,
-    profile: null,
-    session: null,
-    isAuthenticated: false,
-    isLoading: false
-  });
   
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Set up auth state listener
+  // Check if already authenticated
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChange((state) => {
-      console.log('LoginPage - Auth state changed:', state);
-      setAuthState(state);
-      
-      // Navigate when authenticated successfully
-      if (state.isAuthenticated && state.user && !state.isLoading) {
-        setIsLoading(false); // Clear loading state
-        
-        // Wait for profile to load, then navigate
-        if (state.profile) {
-          const redirectPath = state.profile.role === 'admin' ? '/admin' : '/dashboard';
-          console.log('Navigating to:', redirectPath);
-          setTimeout(() => {
-            navigate(redirectPath, { replace: true });
-          }, 100);
-        } else {
-          // Profile loading might take a moment, wait a bit
-          setTimeout(() => {
-            const currentProfile = authService.getCurrentProfile();
-            if (currentProfile) {
-              const redirectPath = currentProfile.role === 'admin' ? '/admin' : '/dashboard';
-              console.log('Delayed navigation to:', redirectPath);
-              navigate(redirectPath, { replace: true });
-            } else {
-              // Fallback to user dashboard if no profile found
-              console.log('No profile found, navigating to user dashboard');
-              navigate('/dashboard', { replace: true });
-            }
-          }, 2000);
-        }
+      if (state.isAuthenticated && state.profile) {
+        const redirectPath = state.profile.role === 'admin' ? '/admin' : '/dashboard';
+        navigate(redirectPath, { replace: true });
       }
     });
 
@@ -72,9 +39,7 @@ export function LoginPage() {
     setError('');
 
     try {
-      console.log('Attempting login...');
       const result = await authService.signIn(email, password);
-      console.log('Login result:', result);
       
       if (result.success) {
         if (result.requiresTwoFactor) {
@@ -83,22 +48,18 @@ export function LoginPage() {
             title: "2FA Required",
             description: "Please enter your two-factor authentication code.",
           });
-          setIsLoading(false);
         } else {
           toast({
             title: "Login Successful",
             description: "Welcome back!",
           });
-          // Reset loading state and let auth state listener handle navigation
-          setIsLoading(false);
         }
       } else {
         setError(result.error || 'Invalid email or password');
-        setIsLoading(false);
       }
     } catch (error) {
-      console.error('Login error:', error);
       setError('An error occurred during login');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -116,7 +77,6 @@ export function LoginPage() {
           title: "Login Successful",
           description: "Welcome back!",
         });
-        // Navigation will be handled by auth state change listener
       } else {
         setError(result.error || 'Invalid authentication code');
       }
@@ -134,7 +94,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-background to-muted/20 p-4">
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
@@ -149,7 +109,7 @@ export function LoginPage() {
           <p className="text-muted-foreground mt-2">DNS Management Platform</p>
         </div>
 
-        <Card className="bg-gradient-card border-0 shadow-xl">
+        <Card className="border-0 shadow-xl bg-card/50 backdrop-blur">
           <CardHeader className="text-center">
             <CardTitle className="text-2xl font-bold">
               {step === 'login' ? 'Welcome Back' : 'Two-Factor Authentication'}
@@ -170,11 +130,12 @@ export function LoginPage() {
                   <Input
                     id="email"
                     type="email"
-                    placeholder="admin@admin.com"
+                    placeholder="admin@destek.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     disabled={isLoading}
+                    className="bg-background/50"
                   />
                 </div>
                 
@@ -188,6 +149,7 @@ export function LoginPage() {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     disabled={isLoading}
+                    className="bg-background/50"
                   />
                 </div>
 
@@ -278,18 +240,13 @@ export function LoginPage() {
 
             {step === 'login' && (
               <div className="mt-6 space-y-4">
-                <div className="text-center">
-                  <Button variant="link" className="text-sm text-muted-foreground">
-                    Forgot your password?
-                  </Button>
-                </div>
-
                 <div className="border-t pt-4">
-                  <div className="text-sm text-muted-foreground text-center">
-                    <p className="mb-2">Test login credentials:</p>
-                    <p className="text-xs font-mono bg-muted p-2 rounded">
-                      admin@admin.com / admin123
-                    </p>
+                  <div className="text-sm text-muted-foreground text-center space-y-2">
+                    <p className="font-medium">Demo Credentials:</p>
+                    <div className="font-mono text-xs bg-muted p-3 rounded-lg space-y-1">
+                      <p><span className="text-primary">Admin:</span> admin@destek.com / admin123</p>
+                      <p><span className="text-primary">User:</span> user@destek.com / user123</p>
+                    </div>
                     <p className="text-xs mt-2">2FA Code: Any 6 digits (e.g., 123456)</p>
                   </div>
                 </div>
