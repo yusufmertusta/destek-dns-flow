@@ -71,6 +71,16 @@ class AuthService {
   private async loadUserProfile(userId: string): Promise<void> {
     try {
       console.log('Loading profile for user:', userId);
+      
+      // Get current session to ensure we have proper auth context
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('No session found');
+        this.profile = null;
+        this.notifyListeners();
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -80,11 +90,7 @@ class AuthService {
       if (error) {
         console.error('Error loading user profile:', error);
         this.profile = null;
-        this.notifyListeners();
-        return;
-      }
-
-      if (data) {
+      } else if (data) {
         console.log('Profile loaded:', data);
         this.profile = data;
       } else {
