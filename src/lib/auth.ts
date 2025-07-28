@@ -72,30 +72,18 @@ class AuthService {
     try {
       console.log('Loading profile for user:', userId);
       
-      // Get current session to ensure we have proper auth context
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        console.log('No session found');
-        this.profile = null;
-        this.notifyListeners();
-        return;
-      }
-
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', userId)
-        .maybeSingle();
+        .single();
 
       if (error) {
         console.error('Error loading user profile:', error);
         this.profile = null;
-      } else if (data) {
+      } else {
         console.log('Profile loaded:', data);
         this.profile = data;
-      } else {
-        console.log('No profile found for user:', userId);
-        this.profile = null;
       }
       
       this.notifyListeners();
