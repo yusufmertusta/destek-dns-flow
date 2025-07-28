@@ -24,8 +24,10 @@ export function LoginPage() {
   // Check if already authenticated
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChange((state) => {
+      console.log('LoginPage - Auth state changed:', state);
       if (state.isAuthenticated && state.profile) {
         const redirectPath = state.profile.role === 'admin' ? '/admin' : '/dashboard';
+        console.log('LoginPage - Redirecting to:', redirectPath);
         navigate(redirectPath, { replace: true });
       }
     });
@@ -39,6 +41,7 @@ export function LoginPage() {
     setError('');
 
     try {
+      console.log('Attempting login...');
       const result = await authService.signIn(email, password);
       
       if (result.success) {
