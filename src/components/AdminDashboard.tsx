@@ -17,6 +17,7 @@ import {
   Shield,
   Database
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import { dataService } from "@/lib/data";
 import { authService } from "@/lib/auth";
 import { useToast } from "@/hooks/use-toast";
@@ -331,31 +332,32 @@ export function AdminDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            <Button 
-              className="h-20 flex-col space-y-2 bg-gradient-primary hover:opacity-90"
-              onClick={() => window.location.href = '/admin/users'}
-            >
-              <Users className="h-6 w-6" />
-              <span>Manage Users</span>
-            </Button>
+            <Link to="/admin/users">
+              <Button className="h-20 flex-col space-y-2 bg-gradient-primary hover:opacity-90 w-full">
+                <Users className="h-6 w-6" />
+                <span>Manage Users</span>
+              </Button>
+            </Link>
             
-            <Button 
-              variant="outline" 
-              className="h-20 flex-col space-y-2"
-              onClick={() => window.location.href = '/admin/domains'}
-            >
-              <Globe className="h-6 w-6" />
-              <span>View All Domains</span>
-            </Button>
+            <Link to="/admin/domains">
+              <Button 
+                variant="outline" 
+                className="h-20 flex-col space-y-2 w-full"
+              >
+                <Globe className="h-6 w-6" />
+                <span>View All Domains</span>
+              </Button>
+            </Link>
             
-            <Button 
-              variant="outline" 
-              className="h-20 flex-col space-y-2"
-              onClick={() => window.location.href = '/admin/settings'}
-            >
-              <Server className="h-6 w-6" />
-              <span>System Settings</span>
-            </Button>
+            <Link to="/admin/settings">
+              <Button 
+                variant="outline" 
+                className="h-20 flex-col space-y-2 w-full"
+              >
+                <Server className="h-6 w-6" />
+                <span>System Settings</span>
+              </Button>
+            </Link>
           </div>
         </CardContent>
       </Card>

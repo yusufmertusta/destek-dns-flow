@@ -280,8 +280,9 @@ export function AdminDomainsPage() {
                             variant="outline"
                             size="sm"
                             onClick={() => navigate(`/admin/domain/${domain.id}`)}
+                            title="View DNS Records"
                           >
-                            <ExternalLink className="h-4 w-4" />
+                            <Server className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="outline"

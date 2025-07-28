@@ -10,6 +10,7 @@ import { UserDashboard } from "./components/UserDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { AdminUsersPage } from "./components/AdminUsersPage";
 import { AdminDomainsPage } from "./components/AdminDomainsPage";
+import { AdminDNSRecordsPage } from "./components/AdminDNSRecordsPage";
 import { AdminSettingsPage } from "./components/AdminSettingsPage";
 import { ProfilePage } from "./components/ProfilePage";
 import { SupportPage } from "./components/SupportPage";
@@ -51,7 +52,7 @@ const App = () => (
               <Route index element={<AdminDashboard />} />
               <Route path="users" element={<AdminUsersPage />} />
               <Route path="domains" element={<AdminDomainsPage />} />
-              <Route path="domain/:domainId" element={<DNSRecordsPage />} />
+              <Route path="domain/:domainId" element={<AdminDNSRecordsPage />} />
               <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
           </Routes>
