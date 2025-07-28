@@ -195,7 +195,25 @@ class AuthService {
   }
 
   async signOut(): Promise<void> {
-    await supabase.auth.signOut();
+    try {
+      // Clear local state first
+      this.user = null;
+      this.profile = null;
+      this.session = null;
+      
+      // Sign out from Supabase
+      await supabase.auth.signOut();
+      
+      // Notify listeners of the state change
+      this.notifyListeners();
+    } catch (error) {
+      console.error('Error during signOut:', error);
+      // Still clear local state even if signOut fails
+      this.user = null;
+      this.profile = null;
+      this.session = null;
+      this.notifyListeners();
+    }
   }
 
   getCurrentUser(): SupabaseUser | null {

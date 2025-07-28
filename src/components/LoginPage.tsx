@@ -241,20 +241,6 @@ export function LoginPage() {
               </form>
             )}
 
-            {step === 'login' && (
-              <div className="mt-6 space-y-4">
-                <div className="border-t pt-4">
-                  <div className="text-sm text-muted-foreground text-center space-y-2">
-                    <p className="font-medium">Demo Credentials:</p>
-                    <div className="font-mono text-xs bg-muted p-3 rounded-lg space-y-1">
-                      <p><span className="text-primary">Admin:</span> admin@destek.com / admin123</p>
-                      <p><span className="text-primary">User:</span> user@destek.com / user123</p>
-                    </div>
-                    <p className="text-xs mt-2">2FA Code: Any 6 digits (e.g., 123456)</p>
-                  </div>
-                </div>
-              </div>
-            )}
           </CardContent>
         </Card>
 
