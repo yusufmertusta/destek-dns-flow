@@ -43,13 +43,16 @@ class AuthService {
   private async initializeAuth() {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, session) => {
         console.log('Auth state changed:', event, session?.user?.id);
         this.session = session;
         this.user = session?.user ?? null;
         
         if (session?.user) {
-          await this.loadUserProfile(session.user.id);
+          // Use setTimeout to defer the async operation
+          setTimeout(() => {
+            this.loadUserProfile(session.user!.id);
+          }, 0);
         } else {
           this.profile = null;
           this.notifyListeners();
