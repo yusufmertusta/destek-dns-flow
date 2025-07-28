@@ -8,6 +8,11 @@ import { LandingPage } from "./components/LandingPage";
 import { LoginPage } from "./components/LoginPage";
 import { UserDashboard } from "./components/UserDashboard";
 import { AdminDashboard } from "./components/AdminDashboard";
+import { AdminUsersPage } from "./components/AdminUsersPage";
+import { AdminDomainsPage } from "./components/AdminDomainsPage";
+import { AdminSettingsPage } from "./components/AdminSettingsPage";
+import { ProfilePage } from "./components/ProfilePage";
+import { SupportPage } from "./components/SupportPage";
 import { DNSRecordsPage } from "./components/DNSRecordsPage";
 import { DashboardLayout } from "./components/DashboardLayout";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -33,8 +38,8 @@ const App = () => (
             }>
               <Route index element={<UserDashboard />} />
               <Route path="domain/:domainId" element={<DNSRecordsPage />} />
-              <Route path="profile" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Profile Page</h1><p className="text-muted-foreground">Coming soon...</p></div>} />
-              <Route path="support" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Support Page</h1><p className="text-muted-foreground">Coming soon...</p></div>} />
+              <Route path="profile" element={<ProfilePage />} />
+              <Route path="support" element={<SupportPage />} />
             </Route>
 
             {/* Admin Dashboard Routes */}
@@ -44,10 +49,10 @@ const App = () => (
               </ProtectedRoute>
             }>
               <Route index element={<AdminDashboard />} />
-              <Route path="users" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">User Management</h1><p className="text-muted-foreground">Coming soon...</p></div>} />
-              <Route path="domains" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">All Domains</h1><p className="text-muted-foreground">Coming soon...</p></div>} />
+              <Route path="users" element={<AdminUsersPage />} />
+              <Route path="domains" element={<AdminDomainsPage />} />
               <Route path="domain/:domainId" element={<DNSRecordsPage />} />
-              <Route path="settings" element={<div className="p-8 text-center"><h1 className="text-2xl font-bold">Admin Settings</h1><p className="text-muted-foreground">Coming soon...</p></div>} />
+              <Route path="settings" element={<AdminSettingsPage />} />
             </Route>
           </Routes>
         </BrowserRouter>
