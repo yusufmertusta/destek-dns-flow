@@ -142,15 +142,10 @@ class AuthService {
 
       // Check if user has 2FA enabled
       if (data.user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('two_factor_enabled')
-          .eq('user_id', data.user.id)
-          .maybeSingle();
-
-        if (profile?.two_factor_enabled) {
-          // For now, we'll simulate 2FA requirement
-          // In a real implementation, you'd check the 2FA status properly
+        await this.loadUserProfile(data.user.id);
+        
+        if (this.profile?.two_factor_enabled) {
+          // User has 2FA enabled, require verification
           return { success: true, requiresTwoFactor: true };
         }
       }
