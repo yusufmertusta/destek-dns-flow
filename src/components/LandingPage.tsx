@@ -50,7 +50,7 @@ export function LandingPage() {
               <div className="h-8 w-8 bg-gradient-primary rounded-lg flex items-center justify-center">
                 <Server className="h-5 w-5 text-white" />
               </div>
-              <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">DESTEK DNS MANAGEMENT</span>
+              <span className="text-xl font-bold bg-gradient-primary bg-clip-text text-transparent">DDM</span>
             </div>
             
             <div className="hidden md:flex items-center space-x-8">
