@@ -90,7 +90,7 @@ export function LandingPage() {
               Trusted by 10,000+ businesses worldwide
             </Badge>
             
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold mb-6 bg-gradient-hero bg-clip-text text-transparent">
+            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-hero bg-clip-text text-transparent py-[14px] lg:text-7xl">
               Professional DNS
               <br />
               Management Platform
