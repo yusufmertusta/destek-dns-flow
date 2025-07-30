@@ -104,6 +104,38 @@ class DataService {
     return DataService.instance;
   }
 
+  // DNS Sync method to communicate with Bind9 server
+  private async syncDNSRecord(action: 'create' | 'update' | 'delete', record: DNSRecord): Promise<void> {
+    try {
+      // Get domain information
+      const domain = await this.getDomainById(record.domainId);
+      if (!domain) {
+        console.error('Domain not found for DNS sync');
+        return;
+      }
+
+      // Call the edge function to sync with Bind9
+      const { data, error } = await supabase.functions.invoke('sync-dns', {
+        body: {
+          action,
+          record,
+          domain: {
+            id: domain.id,
+            domain_name: domain.domainName
+          }
+        }
+      });
+
+      if (error) {
+        console.error('DNS sync error:', error);
+      } else {
+        console.log('DNS sync successful:', data);
+      }
+    } catch (error) {
+      console.error('Failed to sync DNS record:', error);
+    }
+  }
+
   // Domain methods 
   async getDomainsByUserId(userId: string): Promise<Domain[]> {
     try {
@@ -262,7 +294,12 @@ class DataService {
 
       if (error) throw error;
 
-      return dnsRecordFromDB(data);
+      const newRecord = dnsRecordFromDB(data);
+      
+      // Sync with Bind9 DNS server
+      await this.syncDNSRecord('create', newRecord);
+
+      return newRecord;
     } catch (error) {
       console.error('Error creating DNS record:', error);
       return null;
@@ -280,7 +317,12 @@ class DataService {
 
       if (error) throw error;
 
-      return dnsRecordFromDB(data);
+      const updatedRecord = dnsRecordFromDB(data);
+      
+      // Sync with Bind9 DNS server
+      await this.syncDNSRecord('update', updatedRecord);
+
+      return updatedRecord;
     } catch (error) {
       console.error('Error updating DNS record:', error);
       return undefined;
@@ -289,12 +331,27 @@ class DataService {
 
   async deleteDNSRecord(id: string): Promise<boolean> {
     try {
+      // Get the record before deleting for sync
+      const { data: recordData, error: fetchError } = await supabase
+        .from('dns_records')
+        .select('*')
+        .eq('id', id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       const { error } = await supabase
         .from('dns_records')
         .delete()
         .eq('id', id);
 
       if (error) throw error;
+
+      // Sync with Bind9 DNS server
+      if (recordData) {
+        await this.syncDNSRecord('delete', dnsRecordFromDB(recordData));
+      }
+
       return true;
     } catch (error) {
       console.error('Error deleting DNS record:', error);
